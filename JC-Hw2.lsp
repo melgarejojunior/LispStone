@@ -4,14 +4,34 @@
 ; E.g -> (index. (string cost attack health))
 
 ; For Minions cards
-(setq minion_names '((0 . (dragon 3 5 10)) (1 . (lion 1 3 5)) (2 . (eagle 2 2 7))))
-(setq minion_colors '((0 . (white 1 0.5 1)) (1 . (silver 1 1 2)) (2 . (gold 1 2 5))))
-(setq minion_features '((0 . (3heads 1 2 1)) (1 . (mighty 1 1 2))))
+(setq minion_names (cons (cons (cons(string "dragon") (cons 3 (cons 5 (cons 10 nil)))) 0)
+				   (cons (cons (cons(string "lion") (cons 1 (cons 3 (cons 5 nil)))) 1)
+				   (cons (cons (cons(string "eagle") (cons 2 (cons 2 (cons 7 nil)))) 2)
+					nil))))
+
+(setq minion_colors (cons (cons (cons(string "white") (cons 1 (cons 0.5 (cons 1 nil)))) 0)
+				   (cons (cons (cons(string "silver") (cons 1 (cons 1 (cons 2 nil)))) 1)
+				   (cons (cons (cons(string "gold") (cons 1 (cons 2 (cons 5 nil)))) 2)
+					nil))))
+
+(setq minion_features (cons (cons (cons(string "3heads") (cons 1 (cons 2 (cons 1 nil)))) 0)
+					  (cons (cons (cons(string "mighty") (cons 1 (cons 1 (cons 2 nil)))) 1)
+						nil))))
 
 ; For Monsters cards
-(setq monster_names '((0 . (trex 3 5 10)) (1 . (warrior 1 3 5)) (2 . (wolf 2 2 7))))
-(setq monster_colors '((0 . (grey 1 0.5 1)) (1 . (red 1 1 2)) (2 . (dark 1 2 5))))
-(setq monster_features '((0 . (mutant 1 2 1)) (1 . (evil 1 1 2))))
+(setq monster_names (cons (cons (cons(string "trex") (cons 3 (cons 5 (cons 10 nil)))) 0)
+				   (cons (cons (cons(string "warrior") (cons 1 (cons 3 (cons 5 nil)))) 1)
+				   (cons (cons (cons(string "wolf") (cons 2 (cons 2 (cons 7 nil)))) 2)
+					nil))))
+
+(setq monster_colors (cons (cons (cons(string "grey") (cons 1 (cons 0.5 (cons 1 nil)))) 0)
+				   (cons (cons (cons(string "red") (cons 1 (cons 1 (cons 2 nil)))) 1)
+				   (cons (cons (cons(string "dark") (cons 1 (cons 2 (cons 5 nil)))) 2)
+					nil))))
+
+(setq monster_features (cons (cons (cons(string "evil") (cons 1 (cons 2 (cons 1 nil)))) 0)
+					  (cons (cons (cons(string "mutant") (cons 1 (cons 1 (cons 2 nil)))) 1)
+						nil))))
 
 ; For Spell cards
 (setq spell_cards '((0 . (small_healer 2 0 0.2)) (1 . (big_healer 4 0 0.5)) (2 . (double_attack 4 0.18 0)) (3 . (extra_attack 3 0.1 0))))
@@ -33,10 +53,14 @@
 			(get-element (cdr lst) value spellp)
 			)
 	)
-(defun mount-creature (a b c)
-
+(defun get-creature-element (lst i)
+	(if (eq (cdr(car lst)) i)
+		(setq a (car(car lst)))
+		(get-creature-element (cdr lst) i)
+		)
 	)
 (defun generate-creature (is_minion x)
+	; Define indexes for color, feature and name list
 	(setq color (random 3))
 	(setq feature (random 2))
 	(if (< x 20)
@@ -49,34 +73,33 @@
 	; True case: Monster
 	; False case: Minion
 	(if (null is_minion)
-		(setq desired_color (get-element monster_colors color nil))
-		(setq desired_color (get-element minion_colors color nil))
+		(setq desired_color (get-creature-element monster_colors color))
+		(setq desired_color (get-creature-element minion_colors color))
 		)
 	(if (null is_minion)
-		(setq desired_feature (get-element monster_features feature nil))
-		(setq desired_feature (get-element minion_features feature nil))
+		(setq desired_feature (get-creature-element monster_features feature))
+		(setq desired_feature (get-creature-element minion_features feature))
 		)
 	(if (null is_minion)
-		(setq desired_name (get-element monster_names name nil))
-		(setq desired_name (get-element minion_names name nil))
+		(setq desired_name (get-creature-element monster_names name))
+		(setq desired_name (get-creature-element minion_names name))
 		)
-	(setq card ())
-	(setq card (cons (+ (car(cdr(cdr(cdr(cdr feature))))) (car(cdr(cdr(cdr(cdr color))))) (car(cdr(cdr(cdr(cdr name))))) )))
-	(setq card (cons (+ (car(cdr(cdr(cdr feature)))) (car(cdr(cdr(cdr color)))) (car(cdr(cdr(cdr name)))) )))
-	(setq card (concatenate  'string (car(cdr(cdr feature))) (car(cdr(cdr color))) (car(cdr(cdr name))) ))
-	(setq card (cons (+ (car(cdr feature)) (car(cdr color)) (car(cdr name)) )))
+	(setq new_Mcard ())
+	(setq new_Mcard (cons (+ (car (cdr (cdr (cdr desired_name)))) (car (cdr (cdr (cdr desired_color)))) (car (cdr (cdr (cdr desired_feature))))) new_Mcard))
+	(setq new_Mcard (cons (+ (car (cdr (cdr desired_name))) (car (cdr (cdr desired_color))) (car (cdr (cdr desired_feature)))) new_Mcard))
+	(setq new_Mcard (cons (concatenate 'string (car desired_feature) " " (car desired_color) "-" (car desired_name)) new_Mcard))
+	(setq new_Mcard (cons (+ (car (cdr desired_name)) (car (cdr desired_color)) (car (cdr desired_feature))) new_Mcard))
 	)
 
-(generate-creature t 45)
-; (defun create-card (is_player)
-; 	(setq value (random 100))
-; 	; True case: Creature
-; 	; False case: Spell
-; 	(if (< value 80)
-; 		(generate-creature is_player value)
-; 		(get-element spell_cards (random 4) t)
-; 		)
-; 	)
+(defun create-card (is_player)
+	(setq value (random 100))
+	; True case: Creature
+	; False case: Spell
+	(if (< value 80)
+		(generate-creature is_player value)
+		(get-element spell_cards (random 4) t)
+		)
+	)
 
 ; ################ INITIAL DEFINITIONS ################
 ; Ask name
@@ -86,11 +109,10 @@
 
 (setq player_health 30)
 (setq AI_health 30)
-; (setq is_player t)
-; (setq Hand ((create-card is_player) (create-card is_player) (create-card is_player) (create-card is_player)))
-; (setq is_player nil)
-; (setq AIHand ((create-card is_player) (create-card is_player) (create-card is_player) (create-card is_player)))
-
+(setq playerp t)
+(setq Hand (cons(create-card playerp) (cons (create-card playerp) (cons (create-card playerp) (cons (create-card playerp) nil))))
+(setq playerp nil)
+(setq AIHand (cons(create-card playerp) (cons (create-card playerp) (cons (create-card playerp) (cons (create-card playerp) nil))))
 ; ################ GAME LOOP (MAIN) ################
 ; set turn to 1
 (setq turn 1)
