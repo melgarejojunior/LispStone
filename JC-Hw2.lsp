@@ -92,12 +92,65 @@
 	)
 
 (defun create-card (is_player)
-	(setq value (random 100))
+	(setq value (random 110))
 	; True case: Creature
 	; False case: Spell
 	(if (< value 80)
 		(generate-creature is_player value)
 		(get-element spell_cards (random 4) t)
+		)
+	)
+
+(defun display-game-state ()
+	(write "Your Health: ")
+	(print Health)
+	(write "Your Energy: ")
+	(print player_energy)
+	(write "Your Cards on the Board: ")
+	(print player_board)
+	(write "Cards on your Hand: ")
+	(print Hand)
+
+	(write "Opponent's Health: ")
+	(print AI_health)
+	(write "Opponent's Cards on the Board: ")
+	(print AI_board)
+	)
+
+(defun add-to-board (index isp)
+	(setq j 1)
+	(if (null isp)
+		(dolist (elem AIHand)
+			(if (eq index j)
+				(setq AI_board (cons (car AIHand) AI_board))
+				(setq j (+ j 1))
+				)
+		(dolist (elem Hand)
+			(if (eq index j)
+				(setq player_board (cons (car Hand) player_board))
+				(setq j (+ j 1))
+				)
+			)
+		)
+	)
+
+(defun make-attack (shooter target)
+	)
+
+(defun make-move (cmd isp)
+	(setq cmd_list (coerce cmd 'list))
+	(if (eq #\d (car cmd_list))
+		(if (< (length Hand) 7)
+			(setq Hand (cons(create-card playerp) Hand))
+			(print "Your Hand is FULL!")
+			)
+		(if (eq #\u (car cmd_list))
+			(add-to-board (cdr cmd) isp)
+			(if (eq #\a (car cmd_list))
+				(make-attack (car (cdr cmd)) (car (cdr (cdr cmd))))
+				(print "Invalid command")
+				)
+			)
 		)
 	)
 
@@ -110,10 +163,13 @@
 (setq player_health 30)
 (setq AI_health 30)
 (setq playerp t)
-(setq Hand (cons(create-card playerp) (cons (create-card playerp) (cons (create-card playerp) (cons (create-card playerp) nil))))
+(setq Hand (cons(create-card playerp) (cons (create-card playerp) (cons (create-card playerp) (cons (create-card playerp) nil)))))
 (setq playerp nil)
-(setq AIHand (cons(create-card playerp) (cons (create-card playerp) (cons (create-card playerp) (cons (create-card playerp) nil))))
+(setq AIHand (cons(create-card playerp) (cons (create-card playerp) (cons (create-card playerp) (cons (create-card playerp) nil)))))
+
 ; ################ GAME LOOP (MAIN) ################
+(setq player_board ())
+(setq AI_board ())
 ; set turn to 1
 (setq turn 1)
 ; repeat forever
@@ -122,18 +178,24 @@
 ;    set player energy to equal turn number
 (setq player_energy turn)
 ;    print game state
+(display-game-state)
 (print "Your Turn")
 (print "*INSTRUCTIONS*")
 (print "If the monster is already on the field:")
-(print "Type the number of the card that you want to play followed by the number of the card that you want to attack")
+(print "Type 'a' (for attack) and the number of the card that you want to play followed (without spaces) by the number of the card that you want to attack")
 (print "(Remember 0 is to attack your opponent)")
 (print "If the monster or the spell card is on your hand:")
-(print "Just type the number of the card, and it will be put in the field.")
+(print "Type 'u' (for use) and the number of the card (without spaces), and it will be put in the field.")
+(print "If you want to draw a card:")
+(print "Type 'd'")
+(print " ")
+(print " ")
 ;    while player is not finished do  ; PLAYER TURN (read-eval-print loop)
 (loop
 ;       read player command
+(print "Type your command: ")
 (setq command (read-line))
-;       evaluate player command
+(make-move command t)
 
 ;       if Player is dead, print message and exit
 (if (<= player_health 0)
@@ -153,6 +215,7 @@
 	(when (<= player_energy 0) (return player_energy))
 )
 ;       print game state
+(display-game-state)
 (print "Computer's Turn")
 ;    set AI energy to equal turn number
 (setq AI_energy turn)
@@ -179,7 +242,14 @@
 	(when (<= AI_energy 0) (return AI_energy))
 )
 ;       print game state
+(display-game-state)
 (print "Let's go to the next turn")
+(print ".")
+(print ".")
+(print ".")
+(print ".")
+(print ".")
+(print ".")
 ;    increment turn
 (setq turn (+ turn 1))
 (when (null game_state) (return 0))
