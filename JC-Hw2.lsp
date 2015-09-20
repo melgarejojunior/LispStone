@@ -16,7 +16,7 @@
 
 (setq minion_features (cons (cons (cons(string "3heads") (cons 1 (cons 2 (cons 1 nil)))) 0)
 					  (cons (cons (cons(string "mighty") (cons 1 (cons 1 (cons 2 nil)))) 1)
-						nil))))
+						nil)))
 
 ; For Monsters cards
 (setq monster_names (cons (cons (cons(string "trex") (cons 3 (cons 5 (cons 10 nil)))) 0)
@@ -31,7 +31,7 @@
 
 (setq monster_features (cons (cons (cons(string "evil") (cons 1 (cons 2 (cons 1 nil)))) 0)
 					  (cons (cons (cons(string "mutant") (cons 1 (cons 1 (cons 2 nil)))) 1)
-						nil))))
+						nil)))
 
 ; For Spell cards
 (setq spell_cards '((0 . (small_healer 2 0 0.2)) (1 . (big_healer 4 0 0.5)) (2 . (double_attack 4 0.18 0)) (3 . (extra_attack 3 0.1 0))))
@@ -102,53 +102,149 @@
 	)
 
 (defun display-game-state ()
-	(write "Your Health: ")
-	(print Health)
-	(write "Your Energy: ")
-	(print player_energy)
-	(write "Your Cards on the Board: ")
-	(print player_board)
-	(write "Cards on your Hand: ")
-	(print Hand)
+	(format t "~%#################################################################~%")
+	
+	(format t "Your Health: ")
+	(write player_health)
+	(format t  "~%Your Energy: ")
+	(write player_energy)
+	(format t "~%Cards on your Hand: ")
+	(write Hand)
 
-	(write "Opponent's Health: ")
-	(print AI_health)
-	(write "Opponent's Cards on the Board: ")
-	(print AI_board)
+	(format t "~%~%********BOARD*********~%")
+	(format t  "~%Your Cards on the Board: ")
+	(write player_board)
+
+	(format t  "~%~%Opponent's Cards on the Board: ")
+	(write AI_board)
+	(format t "~%**********************~%")
+	
+	(format t "~%~%Opponent's Health: ")
+	(write AI_health)
+
+	(format t "~%#################################################################~%")
 	)
 
 (defun add-to-board (index isp)
-	(setq j 1)
 	(if (null isp)
-		(dolist (elem AIHand)
-			(if (eq index j)
-				(setq AI_board (cons (car AIHand) AI_board))
-				(setq j (+ j 1))
+		(progn
+			(loop for elem in AIHand
+				for i from 1 to (length AIHand) do
+				(if (eq i index)
+					(setq selected elem)
+					)
 				)
-		(dolist (elem Hand)
-			(if (eq index j)
-				(setq player_board (cons (car Hand) player_board))
-				(setq j (+ j 1))
+			(- AI_energy (car selected))
+			(if (< 0 (- AI_energy (car selected)))
+				(progn
+					(setq AI_board (cons selected AI_board))
+					(setq AIHand (remove selected AIHand :count 1))
+					(setq AI_energy (- AI_energy (car selected)))
+					)
+				(format t "~%Energy Insufficient!!")
+				)
+			)
+		(progn
+			(loop for elem in Hand
+				for i from 1 to (length Hand) do
+				(if (eq i index)
+					(setq selected elem)
+					)
+				)
+			(setq a(- player_energy (car selected)))
+			(print a)
+			(if (< 0 (- player_energy (car selected)))
+				(progn
+					(setq player_board (cons selected player_board))
+					(setq Hand (remove selected Hand :count 1))
+					(setq player_energy (- player_energy (car selected)))
+					)
+				(format t "~%Energy Insufficient!!")
 				)
 			)
 		)
+	; (if (null isp)
+	; 	(setq AI_board (cons selected AI_board))
+	; 	(setq player_board (cons selected player_board))
+	; 	)
+	; (if (null isp)
+	; 	(setq AIHand (remove selected AIHand :count 1))
+	; 	(setq Hand (remove selected Hand :count 1))
+	; 	)
+	; (if (null isp)
+	; 	(setq AI_energy (- AI_energy (car selected)))
+	; 	(setq AI_energy (- AI_energy (car selected)))
+	; )
+)
+
+(defun attacking (trgt attacker tisp)
+	(setq ncard (cons (car trgt) (cons (car (cdr trgt)) (cons (car (cdr (cdr trgt))) 
+	(cons (- (car (cdr (cdr (cdr trgt)))) (car (cdr (cdr attacker))) ) nil)))))
+	(if (null tisp)
+		(setq AI_board (substitute ncard trgt AI_board :count 1))
+		(setq player_board (substitute ncard trgt player_board :count 1))
+		)
 	)
 
-(defun make-attack (shooter target)
+(defun make-attack (shooter sisp target tisp)
+	(if (null sisp)
+		(loop for elem in AI_board
+			for i from 1 to (length AI_board) do
+			(if (eq i shooter)
+				(setq attacker elem)
+				)
+			)
+		(loop for elem in player_board
+			for i from 1 to (length player_board) do
+			(if (eq i shooter)
+				(setq attacker elem)
+				)
+			)
+		)
+	(if (null tisp)
+		(loop for elem in AI_board
+			for i from 1 to (length AI_board) do
+			(if (eq i target)
+				(setq trgt elem)
+				)
+			)
+		(loop for elem in player_board
+			for i from 1 to (length player_board) do
+			(if (eq i target)
+				(setq trgt elem)
+				)
+			)
+		)
+	(if (eq target 0)
+		(if (null tisp)
+			(setq AI_health (- AI_health (car (cdr (cdr attacker)))))
+			(setq player_health (- player_health (car (cdr (cdr attacker)))))
+			)
+		(attacking trgt attacker tisp)
+		)
 	)
 
 (defun make-move (cmd isp)
 	(setq cmd_list (coerce cmd 'list))
 	(if (eq #\d (car cmd_list))
 		(if (< (length Hand) 7)
-			(setq Hand (cons(create-card playerp) Hand))
-			(print "Your Hand is FULL!")
+			(setq Hand (cons(create-card t) Hand))
+			(format t "~%Your Hand is FULL!")
 			)
 		(if (eq #\u (car cmd_list))
-			(add-to-board (cdr cmd) isp)
+			(add-to-board (digit-char-p (car(cdr cmd_list))) isp)
 			(if (eq #\a (car cmd_list))
-				(make-attack (car (cdr cmd)) (car (cdr (cdr cmd))))
-				(print "Invalid command")
+				(make-attack (digit-char-p (car (cdr cmd_list))) isp (digit-char-p(car (cdr (cdr cmd_list)))) (not isp))
+				(if (eq #\p (car cmd_list))
+					(if (null isp)
+						(setq AI_energy 0)
+						(setq player_energy 0)
+						)
+					(if (eq #\q (car cmd_list))
+						(quit)
+						(format t "~%Invalid command")
+						)
+					)
 				)
 			)
 		)
@@ -156,9 +252,8 @@
 
 ; ################ INITIAL DEFINITIONS ################
 ; Ask name
-(print "Name:")
+(format t "~%Name: ")
 (setq player_name (read-line))
-(print player_name)
 
 (setq player_health 30)
 (setq AI_health 30)
@@ -169,45 +264,46 @@
 
 ; ################ GAME LOOP (MAIN) ################
 (setq player_board ())
-(setq AI_board ())
+(setq playerp nil)
+(setq AI_board (cons(create-card playerp) (cons (create-card playerp) (cons (create-card playerp) (cons (create-card playerp) nil)))))
 ; set turn to 1
 (setq turn 1)
 ; repeat forever
 (setq game_state t)
 (loop
 ;    set player energy to equal turn number
-(setq player_energy turn)
+(setq player_energy 30)
 ;    print game state
 (display-game-state)
-(print "Your Turn")
-(print "*INSTRUCTIONS*")
-(print "If the monster is already on the field:")
-(print "Type 'a' (for attack) and the number of the card that you want to play followed (without spaces) by the number of the card that you want to attack")
-(print "(Remember 0 is to attack your opponent)")
-(print "If the monster or the spell card is on your hand:")
-(print "Type 'u' (for use) and the number of the card (without spaces), and it will be put in the field.")
-(print "If you want to draw a card:")
-(print "Type 'd'")
-(print " ")
-(print " ")
+; (print "Your Turn")
+; (print "*INSTRUCTIONS*")
+; (print "If the monster is already on the field:")
+; (print "Type 'a' (for attack) and the number of the card that you want to play followed (without spaces) by the number of the card that you want to attack")
+; (print "(Remember 0 is to attack your opponent)")
+; (print "If the monster or the spell card is on your hand:")
+; (print "Type 'u' (for use) and the number of the card (without spaces), and it will be put in the field.")
+; (print "If you want to draw a card:")
+; (print "Type 'd'")
+; (print " ")
+; (print " ")
 ;    while player is not finished do  ; PLAYER TURN (read-eval-print loop)
 (loop
 ;       read player command
-(print "Type your command: ")
+(format t "~%Type your command: ")
 (setq command (read-line))
 (make-move command t)
-
+(display-game-state)
 ;       if Player is dead, print message and exit
 (if (<= player_health 0)
 	(lambda ()
-	(print "LOSER")
+	(format t "~%LOSER")
 	(setq game_state nil)
 	)
 	)
 ;       if AI is dead, print message and exit
 (if (<= AI_health 0)
 	(lambda ()
-	(print "WINNER")
+	(format t "~%WINNER")
 	(setq game_state nil)
 	)
 	)
@@ -216,7 +312,7 @@
 )
 ;       print game state
 (display-game-state)
-(print "Computer's Turn")
+(format t "~%Computer's Turn~%")
 ;    set AI energy to equal turn number
 (setq AI_energy turn)
 ;    while AI is not finished to	    ; AI TURN
@@ -228,14 +324,14 @@
 ;       if Player is dead, print message and exit
 (if (<= player_health 0)
 	(lambda ()
-	(print "LOSER")
+	(format t "~%LOSER")
 	(setq game_state nil)
 	)
 	)
 ;       if AI is dead, print message and exit
 (if (<= AI_health 0)
 	(lambda ()
-	(print "WINNER")
+	(format t "~%WINNER")
 	(setq game_state nil)
 	)
 	)
@@ -243,13 +339,7 @@
 )
 ;       print game state
 (display-game-state)
-(print "Let's go to the next turn")
-(print ".")
-(print ".")
-(print ".")
-(print ".")
-(print ".")
-(print ".")
+(format t "~%Let's go to the next turn~%")
 ;    increment turn
 (setq turn (+ turn 1))
 (when (null game_state) (return 0))
